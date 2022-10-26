@@ -6,70 +6,64 @@ import {
 } from "@project-serum/anchor";
 import * as anchor from "@project-serum/anchor";
 const { SystemProgram } = web3;
-const userAccount = anchor.web3.Keypair.generate();
-describe("basic-1", () => {
-  // Use a local provider.
-  const provider = AnchorProvider.env();
+
+describe("basic-2", () => {
+  const provider = anchor.AnchorProvider.env();
 
   // Configure the client to use the local cluster.
-  setProvider(provider);
+  anchor.setProvider(provider);
 
-  it("Creates and initializes an account in a single atomic transaction (simplified)", async () => {
-    // #region code-simplified
-    // The program to execute.
-    const program = anchor.workspace.NewProject;
+  // Counter for the tests.
+  const counter = anchor.web3.Keypair.generate();
 
-    // The Account to create.
+  // Program for the tests.
+  const program = anchor.workspace.NewProject;
 
-    // Create the new account and initialize it with the program.
-    // #region code-simplified
-
-    // await program.methods
-    // .initialize(new anchor.BN(1234))
-    // .accounts({
-    //   userAccount: userAccount.publicKey,
-    //   user: provider.wallet.publicKey,
-    //   systemProgram: SystemProgram.programId,
-    // })
-    // .signers([userAccount])
-    // .rpc();
-
-    await program.rpc.initialize(new anchor.BN(1234), {
+  it("Creates a counter", async () => {
+    await program.rpc.initialize(provider.wallet.publicKey, {
       accounts: {
-        userAccount: userAccount.publicKey,
+        counter: counter.publicKey,
         user: provider.wallet.publicKey,
         systemProgram: SystemProgram.programId,
       },
-      signers: [userAccount],
+      signers: [counter],
     });
-    // #endregion code-simplified
 
-    // Fetch the newly created account from the cluster.
-    const account = await program.account.userData.fetch(userAccount.publicKey);
+    let counterAccount = await program.account.counter.fetch(counter.publicKey);
 
-    // Check it's state was initialized.
-    assert.ok(account.data.eq(new anchor.BN(1234)));
+    assert.ok(counterAccount.authority.equals(provider.wallet.publicKey));
+    assert.ok(counterAccount.count.toNumber() === 0);
   });
 
-  it("Updates a previously created account", async () => {
-
-    // #region update-test
-    // The program to execute.
-    const program = anchor.workspace.NewProject;
-
-    // Invoke the update rpc.
-    await program.rpc.update(new anchor.BN(4321), {
+  it("Updates a counter", async () => {
+    await program.rpc.increment({
       accounts: {
-        userAccount: userAccount.publicKey,
+        counter: counter.publicKey,
+        authority: provider.wallet.publicKey,
       },
     });
 
-    // Fetch the newly updated account.
-    const account = await program.account.userData.fetch(userAccount.publicKey);
+    const counterAccount = await program.account.counter.fetch(
+      counter.publicKey
+    );
 
-    // Check it's state was mutated.
-    assert.ok(account.data.eq(new anchor.BN(4321)));
+    assert.ok(counterAccount.authority.equals(provider.wallet.publicKey));
+    assert.ok(counterAccount.count.toNumber() == 1);
+  });
+  it("decrement in a counter", async () => {
+    await program.rpc.decrement({
+      accounts: {
+        counter: counter.publicKey,
+        authority: provider.wallet.publicKey,
+      },
+    });
 
-    // #endregion update-test
+
+    const counterAccount = await program.account.counter.fetch(
+      counter.publicKey
+    );
+
+    assert.ok(counterAccount.authority.equals(provider.wallet.publicKey));
+    assert.ok(counterAccount.count.toNumber() == 0);
   });
 });

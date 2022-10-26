@@ -50,6 +50,8 @@ describe("basic-2", () => {
     assert.ok(counterAccount.authority.equals(provider.wallet.publicKey));
     assert.ok(counterAccount.count.toNumber() == 1);
   });
+
+
   it("decrement in a counter", async () => {
     await program.rpc.decrement({
       accounts: {

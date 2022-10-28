@@ -7,6 +7,11 @@ import {
 import * as anchor from "@project-serum/anchor";
 const { SystemProgram } = web3;
 
+const program = anchor.workspace.NewProject;
+const [vault] = web3.PublicKey.findProgramAddressSync([
+  Buffer.from("vault")
+], program.programId)
+
 describe("basic-2", () => {
   const provider = anchor.AnchorProvider.env();
 
@@ -17,13 +22,16 @@ describe("basic-2", () => {
   const counter = anchor.web3.Keypair.generate();
 
   // Program for the tests.
-  const program = anchor.workspace.NewProject;
+
+
+
 
   it("Creates a counter", async () => {
-    await program.rpc.initialize(provider.wallet.publicKey, {
+    await program.rpc.initialize({
       accounts: {
         counter: counter.publicKey,
         user: provider.wallet.publicKey,
+        vault,
         systemProgram: SystemProgram.programId,
       },
       signers: [counter],
@@ -39,7 +47,8 @@ describe("basic-2", () => {
     await program.rpc.increment({
       accounts: {
         counter: counter.publicKey,
-        authority: provider.wallet.publicKey,
+        payer: provider.wallet.publicKey,
+        vault
       },
     });
 
@@ -56,7 +65,8 @@ describe("basic-2", () => {
     await program.rpc.decrement({
       accounts: {
         counter: counter.publicKey,
-        authority: provider.wallet.publicKey,
+        payer: provider.wallet.publicKey,
+        vault
       },
     });
 
